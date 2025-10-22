@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Add User</title>
+  <!-- Your existing CSS -->
+  <style>
+    body{
+      display: flex;
+      height: 100vh;
+      align-items: center;
+      font-family: Arial, sans-serif;
+      justify-content: center;
+      background-image: url(image/apubackground.png);
+    }
+    .submit-btn{
+      margin-top: 30px;  
+      width: 100%;
+      padding: 12px;
+      border: none;
+      background: #007bff;
+      color: white;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: transform 0.2s ease, background 0.2s ease;
+    }
+    .submit-btn:hover {
+      background: #0056b3;
+      transform: scale(1.05); 
+    }
+    .login-box{
+      background: #fff;
+      padding: 80px;
+      border-radius: 20px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      width: 300px;
+      background-color: rgba(255, 255, 255, 255);
+      opacity:0.9;
+    }
+    input[type="email"],
+    input[type="password"],
+    input[type="text"],
+    select {
+      width: 100%;        
+      padding: 10px;    
+      font-size: 18px;    
+      margin: 10px 0;     
+      border: 1px solid #ccc;
+      border-radius: 10px;
+      box-sizing: border-box;
+    }
+    #title {
+      font-size: 35px;
+      text-align: center;
+    }
+    /* Overlay (background) */
+  .dialog-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 999;
+  }
+
+  /* Dialog box */
+  .dialog-box {
+    background: white;
+    padding: 20px;
+    border-radius: 10px;
+    width: 320px;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+    text-align: center;
+    animation: pop 0.25s ease;
+  }
+
+  /* Animation */
+  @keyframes pop {
+    from { transform: scale(0.8); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+  }
+
+  /* Button */
+  .dialog-box button {
+    margin-top: 15px;
+    padding: 8px 15px;
+    border: none;
+    background-color: #0078ff;
+    color: white;
+    border-radius: 5px;
+    cursor: pointer;
+  }
+
+  .dialog-box button:hover {
+    background-color: #005fc9;
+  }
+  </style>
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
+    import { getAuth, createUserWithEmailAndPassword,  onAuthStateChanged,  signInWithEmailAndPassword} from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
+    import { getFirestore, doc, setDoc } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
+
+    // ✅ Your Firebase Config
+    // Firebase config 
+    const firebaseConfig = {
+        apiKey: "AIzaSyDU0UU5oWNs2JwFagNd8SIF4WQJD1d5Uuk",
+        authDomain: "dinningmenu-dd125.firebaseapp.com",
+        projectId: "dinningmenu-dd125",
+        storageBucket: "dinningmenu-dd125.appspot.com",
+        messagingSenderId: "58391019750",
+        appId: "1:58391019750:web:e5b87db44b289c87c83b27",
+        measurementId: "G-5JVBHM1PP2"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    // Check if user is login
+    onAuthStateChanged(auth, (user) => {
+      if (user) {
+        // ✅ user logged in, allow access
+        console.log("User logged in:", user.email);
+      } else {
+        // ❌ user not logged in, redirect back to login page
+        window.location.href = "index.html";
+      }
+    });
+
+    window.addUser = async function () {
+      const email = document.getElementById("email").value;
+      const password = document.getElementById("password").value;
+      const role = document.getElementById("role").value;
+
+      if (!email || !password || !role) {
+        alert("❗Please fill in all fields.");
+        return;
+      }
+
+      if (!email.includes("@") || !email.includes(".")) {
+        showDialog("Please enter a valid email address.");
+        return;
+      }
+
+      // ✅ Save currently logged in manager's email and password OR use re-auth token
+      const currentUser = auth.currentUser;
+      const managerEmail = currentUser.email;
+      const managerPassword = prompt("Please confirm your password to continue creating new user:");
+
+      if (!managerPassword) {
+        showDialog("Operation has been cancel.");
+        return;
+      }
+
+      try {
+        // ✅ Step 1: Create new user (this logs out the manager automatically)
+        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        const newUser = userCredential.user;
+        console.log("✅ New user created:", newUser.uid);
+
+        // ✅ Step 2: Re-sign in as manager (required to get Firestore write access)
+        await signInWithEmailAndPassword(auth, managerEmail, managerPassword);
+        console.log("✅ Re-authenticated as manager:", managerEmail);
+
+        // ✅ Step 3: Add Firestore document as manager (allowed by rules)
+        await setDoc(doc(db, "users", newUser.uid), {
+          Role: role,
+          Name: email
+        });
+
+        showDialog("New user created:"+ newUser.uid);
+        document.getElementById("addUserForm").reset();
+
+      } catch (error) {
+        console.error("❌ Error:", error);
+        showDialog("Error: " + error.message);
+      }
+    };
+    function showDialog(message) {
+      // Create overlay
+      const overlay = document.createElement("div");
+      overlay.className = "dialog-overlay";
+
+      // Create dialog box
+      const box = document.createElement("div");
+      box.className = "dialog-box";
+      box.innerHTML = `
+        <p>${message}</p>
+        <button id="close-btn">OK</button>
+      `;
+
+      // Append box to overlay and overlay to body
+      overlay.appendChild(box);
+      document.body.appendChild(overlay);
+
+          // Close button event
+      document.getElementById("close-btn").addEventListener("click", () => {
+        overlay.remove();
+      });
+
+      // Optional: close when clicking outside the box
+      overlay.addEventListener("click", (e) => {
+        if (e.target === overlay) overlay.remove();
+      });
+    }
+  </script>
+</head>
+<body>
+  <div class="login-box">
+    <h2 id="title">Add User</h2>
+    <form id="addUserForm">
+      <input type="email" id="email" placeholder="Enter Email" required />
+      <input type="password" id="password" placeholder="Enter Password" required />
+
+      <select id="role" required>
+        <option value="" disabled selected>Select Role</option>
+        <option value="manager">Manager</option>
+        <option value="staff">Staff</option>
+      </select>
+
+      <button type="button" class="submit-btn" onclick="addUser()">Add User</button>
+    </form>
+  </div>
+</body>
+</html>
