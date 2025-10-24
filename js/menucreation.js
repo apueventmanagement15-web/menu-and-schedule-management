@@ -318,7 +318,7 @@ function resetform() {
   const fieldsets = document.querySelectorAll("fieldset");
 
   fieldsets.forEach(fieldset => {
-    if (fieldset.id !== "form0"||fieldset.id !=="menufieldset") {
+    if (fieldset.id !== "form0"&& fieldset.id !=="menufieldset") {
       // Delete all fieldsets except form0 and menufieldset
       fieldset.remove();
     } else {
@@ -361,4 +361,5 @@ function showDialog(message) {
   overlay.addEventListener("click", (e) => {
     if (e.target === overlay) overlay.remove();
   });
+
 }
