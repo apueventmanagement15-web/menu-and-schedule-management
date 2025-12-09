@@ -47,9 +47,9 @@ window.OneSignal = window.OneSignal || [];
 // Required fix for GitHub Pages project path
 OneSignal.SERVICE_WORKER_PARAM = { scope: '/menu-and-schedule-management/' };
 OneSignal.SERVICE_WORKER_PATH =
-  '/menu-and-schedule-management/OneSignalSDKWorker.js';
+  '/OneSignalSDKWorker.js';
 OneSignal.SERVICE_WORKER_UPDATER_PATH =
-  '/menu-and-schedule-management/OneSignalSDKUpdaterWorker.js';
+  '/OneSignalSDKUpdaterWorker.js';
 
 // OneSignal Initialization
 OneSignal.push(function () {
@@ -60,4 +60,5 @@ OneSignal.push(function () {
     },
   });
 });
+
 
