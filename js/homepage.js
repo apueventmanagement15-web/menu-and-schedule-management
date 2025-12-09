@@ -43,11 +43,21 @@ function logout() {
 window.logout=logout;
 
 window.OneSignal = window.OneSignal || [];
-  OneSignal.push(function() {
-    OneSignal.init({
-      appId: "a937747c-6e04-4ce0-ab44-ae3ae639b03b",
-      notifyButton: {
-        enable: true,
-      },
-    });
+
+// Required fix for GitHub Pages project path
+OneSignal.SERVICE_WORKER_PARAM = { scope: '/menu-and-schedule-management/' };
+OneSignal.SERVICE_WORKER_PATH =
+  '/menu-and-schedule-management/OneSignalSDKWorker.js';
+OneSignal.SERVICE_WORKER_UPDATER_PATH =
+  '/menu-and-schedule-management/OneSignalSDKUpdaterWorker.js';
+
+// OneSignal Initialization
+OneSignal.push(function () {
+  OneSignal.init({
+    appId: "a937747c-6e04-4ce0-ab44-ae3ae639b03b",
+    notifyButton: {
+      enable: true,
+    },
   });
+});
+
