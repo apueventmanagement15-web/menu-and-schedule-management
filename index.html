@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" type="text/css" href="css/loginpage.css">
+  <title>Login Page</title>
+  <link rel="icon" href="image/apu-logo.jpg" type="image/jpg">
+  <script type="module">
+    // Import Firebase SDKs
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
+    import { getAuth, signInWithEmailAndPassword,setPersistence, browserLocalPersistence, browserSessionPersistence, signOut, onAuthStateChanged} from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
+    import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+
+    // Firebase config 
+    const firebaseConfig = {
+      apiKey: "AIzaSyDU0UU5oWNs2JwFagNd8SIF4WQJD1d5Uuk",
+      authDomain: "dinningmenu-dd125.firebaseapp.com",
+      projectId: "dinningmenu-dd125",
+      storageBucket: "dinningmenu-dd125.appspot.com",
+      messagingSenderId: "58391019750",
+      appId: "1:58391019750:web:e5b87db44b289c87c83b27",
+      measurementId: "G-5JVBHM1PP2"
+    };
+
+    // Initialize Firebase
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    // Handle login
+    window.loginUser = function () {
+      const email = document.getElementById("email").value;
+      const password = document.getElementById("password").value;
+      const rememberMe = document.getElementById("rememberme").checked;
+
+      const persistenceType = rememberMe 
+        ? browserLocalPersistence     // stay logged in even after closing browser
+        : browserSessionPersistence;  // logout when browser closes
+
+      
+      // Set persistence first
+      setPersistence(auth, persistenceType)
+        .then(() => {
+          // Now proceed with login
+          return signInWithEmailAndPassword(auth, email, password);
+        })
+        .then(async (userCredential) => {
+          const user = userCredential.user;
+          console.log("✅ Login successful:", user.email);
+
+          // 🔍 Check Firestore for role
+          const docRef = doc(db, "users", user.uid);
+          const docSnap = await getDoc(docRef);
+
+          if (docSnap.exists()) {
+            const role = docSnap.data().Role;
+
+            if (role === "manager") {
+              // 🔁 Redirect to homepage for manager
+              window.location.href = "homepage.html";
+            } else if (role === "staff") {
+              // 🔁 Redirect to schedule page for staff
+              window.location.href = "schedule.html";
+            } else {
+              alert("❗ Unknown role. Please contact admin.");
+              await signOut(auth);
+            }
+          } else {
+            alert("❗ User role not found in Firestore.");
+            await signOut(auth);
+          }
+        })
+        .catch((error) => {
+          console.error("Login failed:", error.message);
+          document.getElementById("password").value = '';
+          document.getElementById("email").value = '';
+          document.getElementById("error").innerHTML = "❗Wrong Email or Password";
+        });
+    }
+    //if user has already login
+    onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        console.log("User already logged in:", user.email);
+        const loginBox = document.querySelector(".login-box");
+        if (loginBox) {
+          loginBox.style.display = "none";    //hide login box
+        }
+        // 🔍 Check Firestore for role
+        const docRef = doc(db, "users", user.uid);
+        const docSnap = await getDoc(docRef);
+
+        if (docSnap.exists()) {
+          const role = docSnap.data().Role;
+
+          if (role === "manager") {
+            window.location.href = "homepage.html";
+          } else if (role === "staff") {
+            window.location.href = "homepage_staff.html";
+          } else {
+            alert("❗ Unknown role. Logging out.");
+            await signOut(auth);
+          }
+        } else {
+          alert("❗ User data missing in Firestore. Logging out.");
+          await signOut(auth);
+        }
+      } else {
+        console.log("No user logged in — show login form");
+      }
+    });
+  </script>
+</head>
+<body>
+  <div class="login-box">
+    <h2 id="title">Login</h2>
+    <form onsubmit="event.preventDefault(); loginUser();">
+      <label id="email-label">Email</label><br>
+      <input type="email" id="email" required placeholder="example@mail.com"><br><br>
+      <label id="password-label">Password</label><br>
+      <input type="password" id="password" required placeholder="Enter Password"><span id="error"></span><br><br>
+      <label id="rememberme-label">Remember Me<input type="checkbox" id="rememberme"/></label><br><br>
+      <button type="submit" class="submit-btn">Login</button>
+    </form>
+  </div>
+</body>
+</html>
